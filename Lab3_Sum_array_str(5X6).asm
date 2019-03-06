@@ -9,7 +9,7 @@
     msg_row    db 0Dh, 0Ah, 'Rows: ', '$' 
     msg_invld  db 0Dh, 0Ah, 'Incorrectly, Enter again. ', '$' 
     msg_overfl db 0Dh, 0Ah, 'Overflow! Enter again. ', '$'
-    msg_sum_of db 0Dh, 0Ah, 'Overflow while sum calculating.', '$'
+    msg_sum_of db 0Dh, 0Ah, 'OFS', '$'
     endl       db 0Dh, 0Ah, '$'
     
     columns    db 0
@@ -138,47 +138,27 @@ SUM:
             mov  AX, result[DI]      
             call OutInt
                                                     
-        to_next_row:            
+        to_next_row:
+            mov  AH, 02h                            ; print ' '
+            mov  DL, ' '                            ;
+            int 21h                                 ;
+                    
             pop   CX                 
             add   DI, 2
     loop  sum_loop1
              
-    ;jmp   OutputResult
     jmp exit                 
    
-    sum_error:                                      ; sum error
-        ;mov  result[DI], 00h                        ;
-        add   SI, 2 
+    sum_error:
+        mov   AX, 2                                 ; move SI to next row
+        mul   CX                                    ;  
+        add   SI, AX                                ;
+        
         mov   AH, 09h            
         lea   DX, msg_sum_of        
         int   21h
           
-        jmp  to_next_row                            ; 
-   
-                                                                      
-                                                                      
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;                                                                                                                                                                                                                                                     
-;OutputResult: 
- ;   mov  AH, 09h             
-  ;  lea  DX, msg_result        
-   ; int 21h                  
-                            
-    ;xor  CX, CX                                     
-    ;mov  CL, rows                                   
-    ;xor  SI, SI                                     
-    
-    ;output_loop:                
-    ;    mov  AX, result[SI]      
-    ;    call OutInt              
-    ;    add  SI, 2                     
-    ;            
-    ;    mov  AH, 02h                                ; print ' '
-    ;    mov  DL, ' '                                ;
-    ;    int 21h                                     ;
-    ;                        
-    ;loop output_loop         
-    ;jmp exit                 
-                                                                                                                                     
+        jmp  to_next_row                                                                                                                                                               
            
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;          
 get_number proc          
