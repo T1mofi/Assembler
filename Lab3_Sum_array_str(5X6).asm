@@ -9,6 +9,7 @@
     msg_row    db 0Dh, 0Ah, 'Rows: ', '$' 
     msg_invld  db 0Dh, 0Ah, 'Incorrectly, Enter again. ', '$' 
     msg_overfl db 0Dh, 0Ah, 'Overflow! Enter again. ', '$'
+    msg_sum_of db 0Dh, 0Ah, 'Overflow while sum calculating.', '$'
     endl       db 0Dh, 0Ah, '$'
     
     columns    db 0
@@ -128,44 +129,55 @@ SUM:
         sum_loop2:                                     
             mov   AX, array[SI]                     ; AX = array[SI]
             add   result[DI], AX                    ; result[DI] += AX
-            jo    sum_error                         ; ? OF==1 (overflow flag) - set sum in row = 0
+                jo    sum_error                     ; ? OF==1 (overflow flag) - set sum in row = 0        
+                
             add   SI, 2                 
-        loop  sum_loop2
+        loop  sum_loop2 
+        
+        out_row_sum:
+            mov  AX, result[DI]      
+            call OutInt
                                                     
         to_next_row:            
-        pop   CX                 
-        add   DI, 2
+            pop   CX                 
+            add   DI, 2
     loop  sum_loop1
              
-    jmp   OutputResult                 
+    ;jmp   OutputResult
+    jmp exit                 
    
     sum_error:                                      ; sum error
-        mov  result[DI], 00h                        ; 
+        ;mov  result[DI], 00h                        ;
+        add   SI, 2 
+        mov   AH, 09h            
+        lea   DX, msg_sum_of        
+        int   21h
+          
         jmp  to_next_row                            ; 
    
                                                                       
                                                                       
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;                                                                                                                                                                                                                                                     
-OutputResult: 
-    mov  AH, 09h             
-    lea  DX, msg_result        
-    int 21h                  
+;OutputResult: 
+ ;   mov  AH, 09h             
+  ;  lea  DX, msg_result        
+   ; int 21h                  
                             
-    xor  CX, CX                                     
-    mov  CL, rows                                   
-    xor  SI, SI                                     
+    ;xor  CX, CX                                     
+    ;mov  CL, rows                                   
+    ;xor  SI, SI                                     
     
-    output_loop:                
-        mov  AX, result[SI]      
-        call OutInt              
-        add  SI, 2                     
-                
-        mov  AH, 02h                                ; print ' '
-        mov  DL, ' '                                ;
-        int 21h                                     ;
-                            
-    loop output_loop         
-    jmp exit                 
+    ;output_loop:                
+    ;    mov  AX, result[SI]      
+    ;    call OutInt              
+    ;    add  SI, 2                     
+    ;            
+    ;    mov  AH, 02h                                ; print ' '
+    ;    mov  DL, ' '                                ;
+    ;    int 21h                                     ;
+    ;                        
+    ;loop output_loop         
+    ;jmp exit                 
                                                                                                                                      
            
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;          
