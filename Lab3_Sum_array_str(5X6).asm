@@ -140,7 +140,7 @@ SUM:
     jmp   OutputResult                 
    
     sum_error:                                      ; sum error
-        mov  result[DI], 'e'                        ; 
+        mov  result[DI], 00h                        ; 
         jmp  to_next_row                            ; 
    
                                                                       
