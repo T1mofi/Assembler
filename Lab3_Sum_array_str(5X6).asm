@@ -9,16 +9,18 @@
     msg_row    db 0Dh, 0Ah, 'Rows: ', '$' 
     msg_invld  db 0Dh, 0Ah, 'Incorrectly, Enter again. ', '$' 
     msg_overfl db 0Dh, 0Ah, 'Overflow! Enter again. ', '$'
-    msg_sum_of db 0Dh, 0Ah, 'OFS', '$'
+    msg_sum_of db 'OFS','$'
     endl       db 0Dh, 0Ah, '$'
     
     columns    db 0
     rows       db 0
     
-    number     db 7, 0, 7 dup ('$')
+    number     db 7, 0, 7 dup ('$')                 ; var for input number(char)
                   
-    array      dw 30 dup (0)
-    result     dw 6 dup (0)            
+    array      dw 30 dup (0)                        ; arr numbers(int)
+    result     dw 6 dup (0)                         ; var for sum(int)
+     
+    sign       dw 0                                 ; sign flag                
      
 .code
 
@@ -119,7 +121,11 @@ SUM:
     xor   CX, CX             
     mov   CL, rows                                  ; CL = rows
     xor   SI, SI             
-    xor   DI, DI             
+    xor   DI, DI   
+    
+    mov   AH, 09h                               
+    lea   DX, msg_result                             
+    int   21h            
 
     sum_loop1:                                     
         push  CX                 
@@ -182,15 +188,15 @@ get_number proc
         mov   AH, 00h                                
         mov   AL, number[SI]                         
         
-        cmp   AL, '-'                               ; sting != "-"
+        cmp   AL, '-'                               ; string != "-"
             jne   check_loop                        ;
         cmp   CL, 1                                 ;  
             jle   inp_num_err                       ;
             
         inc   SI                                                    
-        dec   CX
+        dec   CX  
                                  
-    check_loop:                                     
+    check_loop:                                   
         mov   AL, number[SI]                        ; > 0 && < 9
         cmp   AL, '0'                               ;
         jl    inp_num_err                           ;   
@@ -207,36 +213,61 @@ get_number proc
         jmp   num_inp            
                              
 
-    converting:                                     ; convert string to int                          
+    converting:         
+    
+        mov   AL, number[2]      
+        cmp   AL, '-'  
+            jne positive_flag 
+        
+        mov sign, 1 
+        jmp conv_start
+            
+        positive_flag:
+            mov sign, 0
+
+            
+        conv_start:                                                                           
         xor   CX, CX                                
         mov   CL, number[1]                         ; real string len
         
-        mov   SI, CX                                ; set on last sumbol of sting                           
+        mov   SI, CX                                ; set on last sumbol of string                           
         inc   SI                                    ; 
         
         xor   BX, BX                                                                
         mov   DX, 1                                 ; DX = 1 - discharge multiplier
         push  DX                                    
-        xor   AX, AX                                ; value of discharge
+        xor   AX, AX                                
                                    
         converting_loop:              
             mov   AL, number[SI]      
-            cmp   AL, '-'                   
-                je    to_neg
                               
             and   AX, 0Fh                           ; char to int(-48)
     
-            mul   DX                                ; AX *= DX, DX=0
+            imul  DX                                ; AX *= DX, DX=0
             pop   DX                  
                 jo    overflow                      ; ? OF==1 goto overflow (overflow flag)
-   
+                
+            cmp sign, 0
+                jne substract    
+                                                      
+                                                      
             add   BX, AX                            ; BX +=AX
                 js    overflow                      ; ? SF==1 goto overflow (sign flag)
-                jo    overflow                      ; ? OF==1 goto overflow (overflow flag) 
-   
+                jo    overflow                      ; ? OF==1 goto overflow (overflow flag)
+            
             cmp   SI, 02h                           
-                je    end_get              
-   
+                je    end_get 
+            
+            jmp to_next_char
+            
+            substract:  
+                sub   BX, AX                            ; BX +=AX
+                    jo    overflow                      ; ? OF==1 goto overflow (overflow flag)
+                
+                cmp   SI, 03h                           
+                je    end_get      
+           
+            to_next_char:
             mov   AX, 10                            
             mul   DX                                ; AX *= DX 
                 jo    overflow                      ; ? OF==1 goto overflow (overflow flag)
@@ -247,12 +278,6 @@ get_number proc
         loop  converting_loop     
         jmp   end_get             
                             
-    to_neg:                      
-        pop   DX                   
-        neg   BX                                    ; BX = -BX conversion to reverse code
-            jo    overflow                          ; ? OF==1 goto overflow (overflow flag)
-            jmp   end_get            
-
     overflow:                    
         mov   AH, 09h             
         lea   DX, msg_overfl       
@@ -303,7 +328,7 @@ OutInt proc                                         ;void output_int(AX = intNum
                         
         oi3:                         
             pop  DX                   
-            add  DL, '0'                            ;  DL += (48) - char to int
+            add  DL, '0'                            ;  DL += (48) - int to char
             int  21h                 
         loop oi3                 
     
@@ -320,11 +345,11 @@ end START
         ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
         ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    !!!  !!! !!!    !!!
+        ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!! ! !! !!! !!! !!
+        ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    !!! !! ! !!! !!! !!
+        ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!! !!!  !!! !!! !!
+        ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    !!! !!!! !!!    !!!
         ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ;!!!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!!! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
