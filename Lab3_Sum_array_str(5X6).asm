@@ -338,7 +338,9 @@ OutInt proc                                         ;void output_int(AX = intNum
 OutInt endp                  
        
    
-exit:  
+exit:   
+    mov ax, 4c00h
+    int 21h
        
 end START   
 
